@@ -23,6 +23,7 @@
     <groupId>io.druid.extensions</groupId>
     <artifactId>druid-hdfs-storage</artifactId>
     <name>druid-hdfs-storage</name>
+    <version>0.6.160.sf</version>
     <description>druid-hdfs-storage</description>
 
     <parent>
