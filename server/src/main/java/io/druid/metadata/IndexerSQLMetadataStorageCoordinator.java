@@ -18,7 +18,6 @@
 package io.druid.metadata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -115,17 +114,12 @@ public class IndexerSQLMetadataStorageCoordinator implements IndexerMetadataStor
         }
     );
 
-    final List<DataSegment> segments = Lists.transform(
-        timeline.lookup(interval),
-        new Function<TimelineObjectHolder<String, DataSegment>, DataSegment>()
-        {
-          @Override
-          public DataSegment apply(TimelineObjectHolder<String, DataSegment> input)
-          {
-            return input.getObject().getChunk(0).getObject();
-          }
-        }
-    );
+    List<DataSegment> segments = Lists.newArrayList();
+    for (TimelineObjectHolder<String, DataSegment> partitions : timeline.lookup(interval)) {
+      for (DataSegment segment: partitions.getObject().payloads()){
+        segments.add(segment);
+      }
+    }
 
     return segments;
   }
