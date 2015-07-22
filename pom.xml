@@ -72,7 +72,7 @@
         <jackson.version>2.4.4</jackson.version>
         <log4j.version>2.2</log4j.version>
         <slf4j.version>1.7.10</slf4j.version>
-        <hadoop.compile.version>2.3.0</hadoop.compile.version>
+        <hadoop.compile.version>2.5.2</hadoop.compile.version>
     </properties>
 
     <modules>
