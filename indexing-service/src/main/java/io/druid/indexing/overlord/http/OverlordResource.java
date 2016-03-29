@@ -17,7 +17,6 @@
 
 package io.druid.indexing.overlord.http;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -28,23 +27,18 @@ import com.google.common.collect.Sets;
 import com.google.common.io.ByteSource;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.inject.Inject;
+
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.metamx.common.logger.Logger;
-import io.druid.common.config.JacksonConfigManager;
-import io.druid.indexing.common.TaskStatus;
-import io.druid.indexing.common.actions.TaskActionClient;
-import io.druid.indexing.common.actions.TaskActionHolder;
-import io.druid.indexing.common.task.Task;
-import io.druid.indexing.overlord.TaskMaster;
-import io.druid.indexing.overlord.TaskQueue;
-import io.druid.indexing.overlord.TaskRunner;
-import io.druid.indexing.overlord.TaskRunnerWorkItem;
-import io.druid.indexing.overlord.TaskStorageQueryAdapter;
-import io.druid.indexing.overlord.autoscaling.ResourceManagementScheduler;
-import io.druid.indexing.overlord.setup.WorkerBehaviorConfig;
-import io.druid.metadata.EntryExistsException;
-import io.druid.tasklogs.TaskLogStreamer;
-import io.druid.timeline.DataSegment;
+
 import org.joda.time.DateTime;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -56,12 +50,23 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+
+import io.druid.common.config.JacksonConfigManager;
+import io.druid.indexing.common.TaskStatus;
+import io.druid.indexing.common.actions.TaskActionClient;
+import io.druid.indexing.common.actions.TaskActionHolder;
+import io.druid.indexing.common.task.AppendSimpleTask;
+import io.druid.indexing.common.task.Task;
+import io.druid.indexing.overlord.TaskMaster;
+import io.druid.indexing.overlord.TaskQueue;
+import io.druid.indexing.overlord.TaskRunner;
+import io.druid.indexing.overlord.TaskRunnerWorkItem;
+import io.druid.indexing.overlord.TaskStorageQueryAdapter;
+import io.druid.indexing.overlord.autoscaling.ResourceManagementScheduler;
+import io.druid.indexing.overlord.setup.WorkerBehaviorConfig;
+import io.druid.metadata.EntryExistsException;
+import io.druid.tasklogs.TaskLogStreamer;
+import io.druid.timeline.DataSegment;
 
 /**
  */
@@ -95,8 +100,12 @@ public class OverlordResource
   @Path("/task")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response taskPost(final Task task)
+  public Response taskPost(Task task)
   {
+    if(task instanceof AppendSimpleTask){
+      task = ((AppendSimpleTask) task).toAppendTask();
+    }
+    final Task realTask = task;
     return asLeaderWith(
         taskMaster.getTaskQueue(),
         new Function<TaskQueue, Response>()
@@ -105,12 +114,12 @@ public class OverlordResource
           public Response apply(TaskQueue taskQueue)
           {
             try {
-              taskQueue.add(task);
-              return Response.ok(ImmutableMap.of("task", task.getId())).build();
+              taskQueue.add(realTask);
+              return Response.ok(ImmutableMap.of("task", realTask.getId())).build();
             }
             catch (EntryExistsException e) {
               return Response.status(Response.Status.BAD_REQUEST)
-                             .entity(ImmutableMap.of("error", String.format("Task[%s] already exists!", task.getId())))
+                             .entity(ImmutableMap.of("error", String.format("Task[%s] already exists!", realTask.getId())))
                              .build();
             }
           }
