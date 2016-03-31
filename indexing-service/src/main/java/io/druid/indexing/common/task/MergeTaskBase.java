@@ -17,8 +17,6 @@
 
 package io.druid.indexing.common.task;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -32,10 +30,24 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.metamx.common.ISE;
 import com.metamx.emitter.EmittingLogger;
 import com.metamx.emitter.service.ServiceEmitter;
 import com.metamx.emitter.service.ServiceMetricEvent;
+
+import org.joda.time.DateTime;
+import org.joda.time.Interval;
+
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import io.druid.indexing.common.TaskLock;
 import io.druid.indexing.common.TaskStatus;
 import io.druid.indexing.common.TaskToolbox;
@@ -44,14 +56,6 @@ import io.druid.indexing.common.actions.TaskActionClient;
 import io.druid.segment.IndexIO;
 import io.druid.timeline.DataSegment;
 import io.druid.timeline.partition.NoneShardSpec;
-import org.joda.time.DateTime;
-import org.joda.time.Interval;
-
-import javax.annotation.Nullable;
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  */
@@ -92,21 +96,21 @@ public abstract class MergeTaskBase extends AbstractFixedIntervalTask
         ) == 0, "segments in the wrong datasource"
     );
     // Verify segments are all unsharded
-    Preconditions.checkArgument(
-        Iterables.size(
-            Iterables.filter(
-                segments,
-                new Predicate<DataSegment>()
-                {
-                  @Override
-                  public boolean apply(@Nullable DataSegment segment)
-                  {
-                    return segment == null || !(segment.getShardSpec() instanceof NoneShardSpec);
-                  }
-                }
-            )
-        ) == 0, "segments without NoneShardSpec"
-    );
+    //Preconditions.checkArgument(
+    //    Iterables.size(
+    //        Iterables.filter(
+    //            segments,
+    //            new Predicate<DataSegment>()
+    //            {
+    //              @Override
+    //              public boolean apply(@Nullable DataSegment segment)
+    //              {
+    //                return segment == null || !(segment.getShardSpec() instanceof NoneShardSpec);
+    //              }
+    //            }
+    //        )
+    //    ) == 0, "segments without NoneShardSpec"
+    //);
 
     this.segments = segments;
   }

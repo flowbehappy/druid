@@ -29,6 +29,12 @@ public class AppendSimpleTask extends AppendTask {
         this.getType();
     }
 
+    @Override
+    public String getType()
+    {
+        return "append_simple";
+    }
+
     public AppendTask toAppendTask() {
         return new AppendTask(getId(), getDataSource(), getSegments(), null);
     }
