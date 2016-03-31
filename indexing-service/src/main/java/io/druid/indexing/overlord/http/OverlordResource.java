@@ -55,7 +55,6 @@ import io.druid.common.config.JacksonConfigManager;
 import io.druid.indexing.common.TaskStatus;
 import io.druid.indexing.common.actions.TaskActionClient;
 import io.druid.indexing.common.actions.TaskActionHolder;
-import io.druid.indexing.common.task.AppendSimpleTask;
 import io.druid.indexing.common.task.Task;
 import io.druid.indexing.overlord.TaskMaster;
 import io.druid.indexing.overlord.TaskQueue;
@@ -102,9 +101,9 @@ public class OverlordResource
   @Produces(MediaType.APPLICATION_JSON)
   public Response taskPost(Task task)
   {
-    if(task instanceof AppendSimpleTask){
-      task = ((AppendSimpleTask) task).toAppendTask();
-    }
+    //if(task instanceof AppendSimpleTask){
+    //  task = ((AppendSimpleTask) task).toAppendTask();
+    //}
     final Task realTask = task;
     return asLeaderWith(
         taskMaster.getTaskQueue(),

@@ -41,6 +41,7 @@ import io.druid.query.QueryRunner;
 @JsonSubTypes(value = {
     @JsonSubTypes.Type(name = "append", value = AppendTask.class),
     @JsonSubTypes.Type(name = "append_simple", value = AppendSimpleTask.class),
+
     @JsonSubTypes.Type(name = "merge", value = MergeTask.class),
     @JsonSubTypes.Type(name = "kill", value = KillTask.class),
     @JsonSubTypes.Type(name = "move", value = MoveTask.class),

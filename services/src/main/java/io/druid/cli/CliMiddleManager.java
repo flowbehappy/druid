@@ -19,11 +19,19 @@ package io.druid.cli;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.name.Names;
 import com.google.inject.util.Providers;
+
 import com.metamx.common.logger.Logger;
+
+import org.eclipse.jetty.server.Server;
+
+import java.util.List;
+
 import io.airlift.command.Command;
 import io.druid.guice.IndexingServiceFirehoseModule;
 import io.druid.guice.IndexingServiceModuleHelper;
@@ -33,10 +41,20 @@ import io.druid.guice.JsonConfigProvider;
 import io.druid.guice.LazySingleton;
 import io.druid.guice.LifecycleModule;
 import io.druid.guice.ManageLifecycle;
+import io.druid.guice.PolyBind;
 import io.druid.guice.annotations.Self;
+import io.druid.indexing.common.actions.LocalTaskActionClientFactory;
+import io.druid.indexing.common.actions.TaskActionClientFactory;
+import io.druid.indexing.common.actions.TaskActionToolbox;
 import io.druid.indexing.common.config.TaskConfig;
+import io.druid.indexing.common.config.TaskStorageConfig;
 import io.druid.indexing.overlord.ForkingTaskRunner;
+import io.druid.indexing.overlord.HeapMemoryTaskStorage;
+import io.druid.indexing.overlord.MetadataTaskStorage;
+import io.druid.indexing.overlord.TaskLockbox;
 import io.druid.indexing.overlord.TaskRunner;
+import io.druid.indexing.overlord.TaskStorage;
+import io.druid.indexing.overlord.TaskStorageQueryAdapter;
 import io.druid.indexing.worker.Worker;
 import io.druid.indexing.worker.WorkerCuratorCoordinator;
 import io.druid.indexing.worker.WorkerTaskMonitor;
@@ -45,9 +63,6 @@ import io.druid.indexing.worker.http.WorkerResource;
 import io.druid.segment.realtime.firehose.ChatHandlerProvider;
 import io.druid.server.DruidNode;
 import io.druid.server.initialization.JettyServerInitializer;
-import org.eclipse.jetty.server.Server;
-
-import java.util.List;
 
 /**
  */
@@ -84,7 +99,14 @@ public class CliMiddleManager extends ServerRunnable
             binder.bind(TaskRunner.class).to(ForkingTaskRunner.class);
             binder.bind(ForkingTaskRunner.class).in(LazySingleton.class);
 
+            binder.bind(TaskActionClientFactory.class).to(LocalTaskActionClientFactory.class).in(LazySingleton.class);
+            binder.bind(TaskActionToolbox.class).in(LazySingleton.class);
+            binder.bind(TaskLockbox.class).in(LazySingleton.class);
+            binder.bind(TaskStorageQueryAdapter.class).in(LazySingleton.class);
+
             binder.bind(ChatHandlerProvider.class).toProvider(Providers.<ChatHandlerProvider>of(null));
+
+            configureTaskStorage(binder);
 
             binder.bind(WorkerTaskMonitor.class).in(ManageLifecycle.class);
             binder.bind(WorkerCuratorCoordinator.class).in(ManageLifecycle.class);
@@ -94,6 +116,25 @@ public class CliMiddleManager extends ServerRunnable
             Jerseys.addResource(binder, WorkerResource.class);
 
             LifecycleModule.register(binder, Server.class);
+          }
+
+          private void configureTaskStorage(Binder binder)
+          {
+            JsonConfigProvider.bind(binder, "druid.indexer.storage", TaskStorageConfig.class);
+
+            PolyBind.createChoice(
+                    binder, "druid.indexer.storage.type", Key.get(TaskStorage.class), Key.get(HeapMemoryTaskStorage.class)
+            );
+            final MapBinder<String, TaskStorage> storageBinder = PolyBind.optionBinder(
+                    binder,
+                    Key.get(TaskStorage.class)
+            );
+
+            storageBinder.addBinding("local").to(HeapMemoryTaskStorage.class);
+            binder.bind(HeapMemoryTaskStorage.class).in(LazySingleton.class);
+
+            storageBinder.addBinding("metadata").to(MetadataTaskStorage.class).in(ManageLifecycle.class);
+            binder.bind(MetadataTaskStorage.class).in(LazySingleton.class);
           }
 
           @Provides
