@@ -23,7 +23,8 @@ public class AppendSimpleTask extends AppendTask {
                             @JacksonInject TaskActionToolbox toolbox) {
         super(id,
                 dataSource,
-                getSegments(dataSource, interval, toolbox));
+                getSegments(dataSource, interval, toolbox),
+                null);
         log.info("To append segments: %s", getSegments());
         this.getType();
     }
@@ -32,10 +33,6 @@ public class AppendSimpleTask extends AppendTask {
     public String getType()
     {
         return "append_simple";
-    }
-
-    public AppendTask toAppendTask() {
-        return new AppendTask(getId(), getDataSource(), getSegments());
     }
 
     private static List<DataSegment> getSegments(String dataSource, Interval interval, TaskActionToolbox toolbox) {
